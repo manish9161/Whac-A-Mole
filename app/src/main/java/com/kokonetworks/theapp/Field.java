@@ -10,17 +10,28 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 class Field extends LinearLayout {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final SquareButton[] circles = new SquareButton[9];
     private int currentCircle;
-    private Listener listener;
+    //private Listener listener;
 
-    private int score;
+    //private int score;
     private Mole mole;
 
     private final int ACTIVE_TAG_KEY = 873374234;
+
+    MutableLiveData<Integer> _liveDataLevel = new MutableLiveData<Integer>();
+    LiveData<Integer> levelLiveData = _liveDataLevel;
+
+    MutableLiveData<Integer> _liveDataScore = new MutableLiveData<Integer>();
+    LiveData<Integer> scoreLiveData = _liveDataScore;
+
+    MutableLiveData<Boolean> _liveDataGameEnd = new MutableLiveData<Boolean>();
+    LiveData<Boolean> gameEndLiveData = _liveDataGameEnd;
 
     public Field(Context context) {
         super(context);
@@ -63,22 +74,35 @@ class Field extends LinearLayout {
     }
 
     private void resetScore() {
-        score = 0;
+        _liveDataScore.setValue(0);
+    }
+
+    private void resetEndGame() {
+        _liveDataGameEnd.setValue(false);
     }
 
     public void startGame() {
+        resetEndGame();
         resetScore();
         resetCircles();
         for (SquareButton squareButton : circles) {
             squareButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    boolean active = (boolean) view.getTag(ACTIVE_TAG_KEY);
-                    if (active) {
-                        score += mole.getCurrentLevel() * 2;
-                    } else {
-                        mole.stopHopping();
-                        listener.onGameEnded(score);
+                    if(!_liveDataGameEnd.getValue()) {
+                        boolean active = (boolean) view.getTag(ACTIVE_TAG_KEY);
+                        if (active) {
+                            //score += mole.getCurrentLevel() * 2;
+                            int score = Integer.valueOf(_liveDataScore.getValue()) + mole.getCurrentLevel() * 2;
+                            _liveDataScore.setValue(score);
+                        } else {
+                            mole.stopHopping();
+                            // add this line
+                            int score = Integer.valueOf(_liveDataScore.getValue());
+                            _liveDataGameEnd.setValue(true);
+                            setWrong(view);
+                            //listener.onGameEnded(score);
+                        }
                     }
                 }
             });
@@ -108,7 +132,19 @@ class Field extends LinearLayout {
         });
     }
 
-    public Listener getListener() {
+    public void setWrong(View view) {
+        mainHandler.post(() -> {
+            view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.hole_wrong));
+            view.setTag(ACTIVE_TAG_KEY, true);
+        });
+    }
+
+    public void onLevelChange(int currentLevel) {
+        _liveDataLevel.postValue(currentLevel);
+    }
+
+
+    /*public Listener getListener() {
         return listener;
     }
 
@@ -120,5 +156,5 @@ class Field extends LinearLayout {
         void onGameEnded(int score);
 
         void onLevelChange(int level);
-    }
+    }*/
 }

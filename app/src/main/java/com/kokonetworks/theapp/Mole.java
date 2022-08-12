@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class Mole {
     private final Field field;
@@ -22,12 +23,12 @@ class Mole {
     }
 
     public void startHopping(){
-        field.getListener().onLevelChange(getCurrentLevel());
+        field.onLevelChange(getCurrentLevel());
         startTimeForLevel = System.currentTimeMillis();
 
         future = scheduledExecutorService.scheduleAtFixedRate(() -> {
-            field.setActive(nextHole());
 
+            field.setActive(nextHole());
             if(System.currentTimeMillis()-startTimeForLevel >= LEVEL_DURATION_MS && getCurrentLevel() < LEVELS.length){
                 nextLevel();
             }
@@ -49,7 +50,7 @@ class Mole {
     }
 
     private int nextHole(){
-        int hole = new Random().nextInt(field.totalCircles()-1);
+        int hole = new Random().nextInt(field.totalCircles());
         if(hole == field.getCurrentCircle()){
             return nextHole();
         }
